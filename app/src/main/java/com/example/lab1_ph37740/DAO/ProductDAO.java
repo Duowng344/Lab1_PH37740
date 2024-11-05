@@ -15,13 +15,22 @@ import java.util.ArrayList;
 public class ProductDAO {
     MyDbHelper dbHelper;
     SQLiteDatabase db;
+    Context context; // Thêm biến context để sử dụng
 
-    public ProductDAO(Context context){
+    public ProductDAO(Context context) {
+        this.context = context; // Khởi tạo context
         dbHelper = new MyDbHelper(context);
         db = dbHelper.getWritableDatabase();
     }
 
-    public int addRow(ProductDTO objProduct){
+    public int addRow(ProductDTO objProduct) {
+        // Kiểm tra xem id_cat có hợp lệ không
+        CatDAO catDAO = new CatDAO(context); // Tạo đối tượng CatDAO
+        if (catDAO.getOneById(Integer.parseInt(objProduct.getId_cat())) == null) {
+            Log.d("ProductDAO", "id_cat không hợp lệ: " + objProduct.getId_cat());
+            return -1; // Trả về -1 nếu id_cat không tồn tại
+        }
+
         ContentValues values = new ContentValues();
         values.put("name", objProduct.getName());
         values.put("price", objProduct.getPrice());
@@ -36,7 +45,7 @@ public class ProductDAO {
         }
     }
 
-    public ArrayList<ProductDTO> getList(){
+    public ArrayList<ProductDTO> getList() {
         ArrayList<ProductDTO> listProduct = new ArrayList<>();
         Cursor c = null;
         try {
@@ -66,7 +75,7 @@ public class ProductDAO {
         return listProduct;
     }
 
-    public ProductDTO getOneById(int id){
+    public ProductDTO getOneById(int id) {
         ProductDTO objProduct = null;
         Cursor c = null;
         try {
@@ -89,7 +98,14 @@ public class ProductDAO {
         return objProduct;
     }
 
-    public boolean updateRow(ProductDTO objProduct){
+    public boolean updateRow(ProductDTO objProduct) {
+        // Kiểm tra xem id_cat có hợp lệ không
+        CatDAO catDAO = new CatDAO(context); // Tạo đối tượng CatDAO
+        if (catDAO.getOneById(Integer.parseInt(objProduct.getId_cat())) == null) {
+            Log.d("ProductDAO", "id_cat không hợp lệ: " + objProduct.getId_cat());
+            return false; // Trả về false nếu id_cat không tồn tại
+        }
+
         ContentValues values = new ContentValues();
         values.put("name", objProduct.getName());
         values.put("price", objProduct.getPrice());
