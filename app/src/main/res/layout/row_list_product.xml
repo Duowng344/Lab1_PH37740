@@ -7,14 +7,23 @@
     android:background="#FFEB3B"
     >
     <TextView
-        android:id="@+id/tv_id"
+        android:id="@+id/tv_idproduct"
         android:layout_width="50dp"
         android:layout_height="wrap_content"/>
     <TextView
-        android:id="@+id/tv_name"
+        android:id="@+id/tv_nameproduct"
         android:layout_width="0dp"
         android:layout_weight="1"
         android:layout_height="wrap_content"/>
-
+    <TextView
+        android:id="@+id/tv_price"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/tv_id_cat"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"/>
 
 </LinearLayout>
