@@ -111,4 +111,56 @@ public class ProductDAO {
             db.close();
         }
     }
+
+
+    public ArrayList<ProductDTO> getList(){
+        ArrayList<ProductDTO> listProduct = new ArrayList<>();
+        Cursor c = db.rawQuery("SELECT id, name, price, id_cat FROM tb_product ", null);
+        if (c != null&& c.getCount()>0){
+            c.moveToFirst();
+            do {
+                int id = c.getInt(0);
+                String name = c.getString(1);
+                String price = c.getString(2);
+                String id_cat = c.getString(3);
+                ProductDTO objProduct = new ProductDTO();
+                objProduct.setId(id);
+                objProduct.setName(name);
+                objProduct.setPrice(price);
+                objProduct.setId_cat(id_cat);
+                listProduct.add(objProduct);
+            }while (c.moveToNext());
+        }else {
+            Log.d("zzzzzzzzz", "ProductDAO::getList: Khong lay duoc du lieu");
+        }
+        return listProduct;
+    }
+
+    public ProductDTO getOneById(int id){
+        ProductDTO objProduct = null;
+        String [] params = {String.valueOf(id)};
+        Cursor c = db.rawQuery("SELECT id, name, price, id_cat FROM tb_product WHERE id = ? ", params);
+        if (c != null&& c.getCount() ==1){
+            objProduct = new ProductDTO();
+            objProduct.setId(c.getInt(0));
+            objProduct.setName(c.getString(1));
+            objProduct.setPrice(c.getString(2));
+            objProduct.setId_cat(c.getString(3));
+        }
+        return objProduct;
+    }
+    public boolean updateRow(ProductDTO objProduct){
+        ContentValues v  = new ContentValues();
+        v.put("name", objProduct.getName());
+        v.put("price", objProduct.getPrice());
+        v.put("id_cat", objProduct.getId_cat());
+        String [] params = {String.valueOf(objProduct.getId())};
+        long kq = db.update("tb_product", v,"id = ?", params);
+        return kq > 0;
+    }
+    public boolean deleteRow(ProductDTO objProduct) {
+        String[] params = {String.valueOf(objProduct.getId())};
+        long kq = db.delete("tb_product", "id = ?", params);
+        return kq > 0;
+    }
 }
