@@ -55,92 +55,94 @@ public class ProductActivity extends AppCompatActivity {
         productAdapter = new ProductAdapter(this, listProduct);
         lvProduct.setAdapter(productAdapter);
 
-        btnAdd.setOnClickListener(view -> {
-            String pName = edPName.getText().toString().trim();
-            String price = edPrice.getText().toString().trim();
-            String idCat = edIdCat.getText().toString().trim();
-            if (pName.isEmpty() || price.isEmpty() || idCat.isEmpty()) {
-                Toast.makeText(ProductActivity.this, "Không được bỏ trống", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            ProductDTO objProduct = new ProductDTO();
-            objProduct.setName(pName);
-            objProduct.setPrice(price);
-            objProduct.setId_cat(idCat);
-            int res = productDAO.addRow(objProduct);
-
-            if (res > 0) {
-                listProduct.clear();
-                listProduct.addAll(productDAO.getList());
-                productAdapter.notifyDataSetChanged();
-                clearInputFields();
-            } else {
-                Toast.makeText(ProductActivity.this, "Thêm thất bại", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        lvProduct.setOnItemLongClickListener((adapterView, view, i, l) -> {
-            Log.d(TAG, "onItemLongClick: i = " + i + ", l = " + l);
-            objCurrentProduct = listProduct.get(i);
-            edPName.setText(objCurrentProduct.getName());
-            edPrice.setText(objCurrentProduct.getPrice());
-            edIdCat.setText(objCurrentProduct.getId_cat());
-            return true;
-        });
-
-        btnUpdate.setOnClickListener(view -> {
-            if (objCurrentProduct == null) {
-                Toast.makeText(ProductActivity.this, "Chọn sản phẩm để cập nhật", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            String pName = edPName.getText().toString().trim();
-            String price = edPrice.getText().toString().trim();
-            String idCat = edIdCat.getText().toString().trim();
-            objCurrentProduct.setName(pName);
-            objCurrentProduct.setPrice(price);
-            objCurrentProduct.setId_cat(idCat);
-            boolean res = productDAO.updateRow(objCurrentProduct);
-
-            if (res) {
-                listProduct.clear();
-                listProduct.addAll(productDAO.getList());
-                productAdapter.notifyDataSetChanged();
-                objCurrentProduct = null;
-                clearInputFields();
-            } else {
-                Toast.makeText(ProductActivity.this, "Lỗi không sửa được, có thể trùng dữ liệu...", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        btnDelete.setOnClickListener(view -> {
-            if (objCurrentProduct != null) {
-                boolean res = productDAO.deleteRow(objCurrentProduct.getId());
-                if (res) {
+        btnAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String pName = edPName.getText().toString();
+                String price = edPrice.getText().toString();
+                String idCat = edIdCat.getText().toString();
+                if (pName.isEmpty() || price.isEmpty() || idCat.isEmpty()) {
+                    Toast.makeText(ProductActivity.this, "Không được bỏ trống bất kỳ trường nào", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                ProductDTO objProduct = new ProductDTO();
+                objProduct.setName(pName);
+                objProduct.setPrice(price);
+                objProduct.setId_cat(idCat);
+                int res = productDAO.addRow(objProduct);
+                if (res > 0) {
                     listProduct.clear();
                     listProduct.addAll(productDAO.getList());
                     productAdapter.notifyDataSetChanged();
-                    objCurrentProduct = null;
-                    clearInputFields();
+                    Toast.makeText(ProductActivity.this, "Thêm thành công", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(ProductActivity.this, "Lỗi xóa", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ProductActivity.this, "Thêm thất bại", Toast.LENGTH_SHORT).show();
                 }
-            } else {
-                Toast.makeText(ProductActivity.this, "Bấm giữ dòng để chọn bản ghi cần xóa", Toast.LENGTH_SHORT).show();
             }
         });
-    }
 
-    private void clearInputFields() {
-        edPName.setText("");
-        edPrice.setText("");
-        edIdCat.setText("");
-    }
+        lvProduct.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Log.d(TAG, "onItemLongClick: i = " + i + ", l = " + l);
+                objCurrentProduct = listProduct.get(i);
+                edPName.setText(objCurrentProduct.getName());
+                edPrice.setText(objCurrentProduct.getPrice());
+                edIdCat.setText(objCurrentProduct.getId_cat());
+                return true;
+            }
+        });
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        productDAO.close(); // Đóng kết nối cơ sở dữ liệu
+        btnUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (objCurrentProduct != null) {
+                    String pName = edPName.getText().toString();
+                    String price = edPrice.getText().toString();
+                    String idCat = edIdCat.getText().toString();
+                    objCurrentProduct.setName(pName);
+                    objCurrentProduct.setPrice(price);
+                    objCurrentProduct.setId_cat(idCat);
+                    boolean res = productDAO.updateRow(objCurrentProduct);
+                    if (res) {
+                        listProduct.clear();
+                        listProduct.addAll(productDAO.getList());
+                        productAdapter.notifyDataSetChanged();
+                        objCurrentProduct = null;
+                        edPName.setText("");
+                        edPrice.setText("");
+                        edIdCat.setText("");
+                        Toast.makeText(ProductActivity.this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(ProductActivity.this, "Lỗi: không thể cập nhật. Có thể dữ liệu trùng", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(ProductActivity.this, "Vui lòng chọn một sản phẩm để cập nhật", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        btnDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (objCurrentProduct != null) {
+                    boolean res = productDAO.deleteRow(objCurrentProduct.getId());
+                    if (res) {
+                        listProduct.clear();
+                        listProduct.addAll(productDAO.getList());
+                        productAdapter.notifyDataSetChanged();
+                        objCurrentProduct = null;
+                        edPName.setText("");
+                        edPrice.setText("");
+                        edIdCat.setText("");
+                        Toast.makeText(ProductActivity.this, "Xóa thành công", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(ProductActivity.this, "Lỗi: không thể xóa sản phẩm", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(ProductActivity.this, "Bấm giữ một dòng để chọn sản phẩm cần xóa", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 }
