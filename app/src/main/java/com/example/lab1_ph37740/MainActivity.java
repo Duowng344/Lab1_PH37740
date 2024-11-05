@@ -26,12 +26,10 @@ public class MainActivity extends AppCompatActivity {
     String TAG = "zzzzzzzzz";
     ArrayList<CatDTO> listCat;
     ListView lvCat;
-    Button btnAdd , btnUpdate, btnDelete;
+    Button btnAdd, btnUpdate, btnDelete;
     EditText edName;
     CatAdapter catAdapter;
     CatDTO objCurrentCat = null;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,107 +48,95 @@ public class MainActivity extends AppCompatActivity {
         btnDelete = findViewById(R.id.btn_delete);
         edName = findViewById(R.id.ed_catname);
 
-
         catDAO = new CatDAO(this);
-
         listCat = catDAO.getList();
+        catAdapter = new CatAdapter(this, listCat);
+        lvCat.setAdapter(catAdapter); // Gắn adapter vào listview
 
-        catAdapter = new CatAdapter(this,listCat);
-        lvCat.setAdapter( catAdapter ); // gắn adapter vào listview
+        // Tắt các nút cập nhật và xóa ban đầu
+        btnUpdate.setEnabled(false);
+        btnDelete.setEnabled(false);
 
-        btnAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String catName = edName.getText().toString();
-                if(catName.length()<3){
-                    Toast.makeText(MainActivity.this,
-                            "Tên cân nhập ít nhất 3 ký tu", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                CatDTO objCat = new CatDTO();
-                objCat.setName( catName );
-                int res = catDAO.AddRow(objCat);
-                if (res>0){
-                    listCat.clear();
-                    listCat.addAll( catDAO.getList());
-                    catAdapter.notifyDataSetChanged();
-                }else {
-                    Toast.makeText(MainActivity.this,
-                            "Thêm thất bại", Toast.LENGTH_SHORT).show();
-                }
+        btnAdd.setOnClickListener(view -> {
+            String catName = edName.getText().toString();
+            if (catName.length() < 3) {
+                Toast.makeText(MainActivity.this, "Tên cần nhập ít nhất 3 ký tự", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            CatDTO objCat = new CatDTO();
+            objCat.setName(catName);
+            int res = catDAO.AddRow(objCat);
+            if (res > 0) {
+                listCat.clear();
+                listCat.addAll(catDAO.getList());
+                catAdapter.notifyDataSetChanged();
+                Toast.makeText(MainActivity.this, "Thêm thành công", Toast.LENGTH_SHORT).show();
+            } else if (res == -1) {
+                Toast.makeText(MainActivity.this, "Tên đã tồn tại, vui lòng chọn tên khác", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Thêm thất bại", Toast.LENGTH_SHORT).show();
             }
         });
 
-        lvCat.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Log.d(TAG, "onItemLongClick: i = " + i + ", l = " + l );
-                objCurrentCat = listCat.get(i);
-                edName.setText( objCurrentCat.getName() );
-                return  true;
+        lvCat.setOnItemLongClickListener((adapterView, view, i, l) -> {
+            Log.d(TAG, "onItemLongClick: i = " + i + ", l = " + l);
+            objCurrentCat = listCat.get(i);
+            edName.setText(objCurrentCat.getName());
+            btnUpdate.setEnabled(true); // Bật nút cập nhật
+            btnDelete.setEnabled(true); // Bật nút xóa
+            return true;
+        });
 
+        btnUpdate.setOnClickListener(view -> {
+            if (objCurrentCat == null) {
+                Toast.makeText(MainActivity.this, "Vui lòng chọn một bản ghi để cập nhật", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String catName = edName.getText().toString();
+            if (catName.length() < 3) {
+                Toast.makeText(MainActivity.this, "Tên cần nhập ít nhất 3 ký tự", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            objCurrentCat.setName(catName);
+            boolean res = catDAO.UpdateRow(objCurrentCat);
+            if (res) {
+                listCat.clear();
+                listCat.addAll(catDAO.getList());
+                catAdapter.notifyDataSetChanged();
+                objCurrentCat = null;
+                edName.setText(""); // Xóa trống ô text
+                btnUpdate.setEnabled(false); // Tắt nút cập nhật
+                btnDelete.setEnabled(false); // Tắt nút xóa
+                Toast.makeText(MainActivity.this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Tên đã tồn tại, vui lòng chọn tên khác", Toast.LENGTH_SHORT).show();
             }
         });
 
-        btnUpdate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String catName = edName.getText().toString();
-                objCurrentCat.setName(catName);
-                boolean res = catDAO.UpdateRow( objCurrentCat );
-                if(res){ // sửa thành cong
-                    listCat.clear();
-                    listCat.addAll( catDAO.getList());
-                    catAdapter.notifyDataSetChanged();
-                    objCurrentCat = null;// xóa dữ liệu tạm
-                    edName.setText(""); // xóa trống ô text
-                }else{
-                    Toast.makeText(MainActivity.this,
-                            "Lỗi không sửa được, có thể trùng dữ liệu...", Toast.LENGTH_SHORT).show();
-                }
-
-
+        btnDelete.setOnClickListener(view -> {
+            if (objCurrentCat == null) {
+                Toast.makeText(MainActivity.this, "Vui lòng chọn một bản ghi để xóa", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            boolean res = catDAO.DeleteRow(objCurrentCat);
+            if (res) {
+                listCat.clear();
+                listCat.addAll(catDAO.getList());
+                catAdapter.notifyDataSetChanged();
+                objCurrentCat = null;
+                edName.setText(""); // Xóa trống ô text
+                btnUpdate.setEnabled(false); // Tắt nút cập nhật
+                btnDelete.setEnabled(false); // Tắt nút xóa
+                Toast.makeText(MainActivity.this, "Xóa thành công", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Xóa thất bại", Toast.LENGTH_SHORT).show();
             }
         });
-
-        btnDelete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if(objCurrentCat!= null){
-                    boolean res = catDAO.DeleteRow(objCurrentCat);
-                    if(res){
-                        listCat.clear();
-                        listCat.addAll( catDAO.getList());
-                        catAdapter.notifyDataSetChanged();
-                        objCurrentCat = null;// xóa dữ liệu tạm
-                        edName.setText("");
-                    }else{
-                        Toast.makeText(MainActivity.this, "Lỗi xóa", Toast.LENGTH_SHORT).show();
-                    }
-
-                }else{
-                    Toast.makeText(MainActivity.this,
-                            "Bấm giữ dòng để chọn bản ghi cần xóa", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-
-//
-//        objCat.setName("Oto");
-//        int kq = catDAO.AddRow(objCat);
-//        if (kq == -1){
-//            Log.d(TAG, "Thêm thất bại");
-//        }else {
-//            Log.d(TAG, "Thêm thành công");
-//        }
-//
-//        ArrayList<CatDTO> listCat = catDAO.getList();
-//        for(int i =0; i< listCat.size(); i++){
-//            CatDTO tmp = listCat.get(i);
-//            Log.d(TAG, "onCreate: phan tu thu "+ i + " la: " + tmp.toString());
-//        }
-
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        catDAO.close(); // Đóng cơ sở dữ liệu khi không còn cần thiết
+    }
 }

@@ -12,64 +12,128 @@ import com.example.lab1_ph37740.Dbhelper.MyDbHelper;
 import java.util.ArrayList;
 
 public class CatDAO {
-    MyDbHelper dbHelper;
-    SQLiteDatabase db;
+    private MyDbHelper dbHelper;
+    private SQLiteDatabase db;
+    private static final String TAG = "CatDAO";
 
-    public CatDAO(Context context){
+    public CatDAO(Context context) {
         dbHelper = new MyDbHelper(context);
         db = dbHelper.getWritableDatabase();
     }
 
-    public int AddRow (CatDTO objCat){
-        ContentValues v  = new ContentValues();
-        v.put("name", objCat.getName());
-        int kq  = (int) db.insert("tb_cat", null, v);
-        return kq;
+    // Phương thức thêm một bản ghi
+    public int AddRow(CatDTO objCat) {
+        if (!isValidCat(objCat)) {
+            return -1; // Nếu không hợp lệ, trả về -1
+        }
+        if (isCatNameExists(objCat.getName())) {
+            return -2; // Nếu tên đã tồn tại, trả về -2
+        }
+
+        ContentValues values = new ContentValues();
+        values.put("name", objCat.getName());
+        long result = db.insert("tb_cat", null, values);
+        return (result != -1) ? (int) result : -3; // Trả về -3 nếu thêm thất bại
     }
 
-    public ArrayList<CatDTO> getList(){
+    // Kiểm tra xem tên mèo đã tồn tại chưa
+    private boolean isCatNameExists(String name) {
+        Cursor cursor = null;
+        try {
+            cursor = db.query("tb_cat", new String[]{"id"}, "name=?", new String[]{name}, null, null, null);
+            return cursor.moveToFirst();
+        } finally {
+            if (cursor != null) {
+                cursor.close(); // Đóng cursor
+            }
+        }
+    }
+
+    // Kiểm tra tính hợp lệ của CatDTO
+    private boolean isValidCat(CatDTO cat) {
+        return cat != null && cat.getName() != null && cat.getName().length() >= 3; // Tên mèo phải có ít nhất 3 ký tự
+    }
+
+    // Lấy danh sách tất cả mèo
+    public ArrayList<CatDTO> getList() {
         ArrayList<CatDTO> listCat = new ArrayList<>();
-        Cursor c = db.rawQuery("SELECT id, name FROM tb_cat ", null);
-        if (c != null&& c.getCount()>0){
-            c.moveToFirst();
+        Cursor cursor = db.rawQuery("SELECT id, name FROM tb_cat", null);
+        if (cursor != null && cursor.getCount() > 0) {
+            cursor.moveToFirst();
             do {
-                int id = c.getInt(0);
-                String name = c.getString(1);
                 CatDTO objCat = new CatDTO();
-                objCat.setId(id);
-                objCat.setName(name);
+                objCat.setId(cursor.getInt(0));
+                objCat.setName(cursor.getString(1));
                 listCat.add(objCat);
-            }while (c.moveToNext());
-        }else {
-            Log.d("zzzzzzzzz", "CatDAO::getList: Khong lay duoc du lieu");
+            } while (cursor.moveToNext());
+        } else {
+            Log.d(TAG, "getList: Không lấy được dữ liệu");
         }
+        cursor.close(); // Đóng cursor
         return listCat;
-
     }
-    public CatDTO getOneById(int id){
+
+    // Lấy một mèo theo ID
+    public CatDTO getOneById(int id) {
         CatDTO objCat = null;
-        String [] params = {String.valueOf(id)};
-        Cursor c = db.rawQuery("SELECT id, name FROM tb_cat WHERE id = ? ", params);
-        if (c != null&& c.getCount() ==1){
+        String[] params = {String.valueOf(id)};
+        Cursor cursor = db.rawQuery("SELECT id, name FROM tb_cat WHERE id = ?", params);
+        if (cursor != null && cursor.getCount() == 1) {
+            cursor.moveToFirst();
             objCat = new CatDTO();
-            objCat.setId(c.getInt(0));
-            objCat.setName(c.getString(1));
+            objCat.setId(cursor.getInt(0));
+            objCat.setName(cursor.getString(1));
         }
+        cursor.close(); // Đóng cursor
         return objCat;
-
-    }
-    public boolean UpdateRow(CatDTO objCat){
-        ContentValues v  = new ContentValues();
-        v.put("name", objCat.getName());
-        String [] params = {String.valueOf(objCat.getId())};
-        long kq = db.update("tb_cat", v,"id = ?", params);
-        return kq > 0;
-
     }
 
-    public boolean DeleteRow(CatDTO objCat) {
+    // Cập nhật một bản ghi
+    public boolean UpdateRow(CatDTO objCat) {
+        if (objCat == null || objCat.getId() <= 0 || !isValidCat(objCat)) {
+            return false; // Nếu không hợp lệ hoặc không có ID, trả về false
+        }
+
+        // Kiểm tra xem tên mèo mới có trùng với tên mèo khác không
+        if (isCatNameExistsExceptId(objCat.getName(), objCat.getId())) {
+            return false; // Nếu tên đã tồn tại cho bản ghi khác, trả về false
+        }
+
+        ContentValues values = new ContentValues();
+        values.put("name", objCat.getName());
         String[] params = {String.valueOf(objCat.getId())};
-        long kq = db.delete("tb_cat", "id = ?", params);
-        return kq > 0;
+        long result = db.update("tb_cat", values, "id = ?", params);
+        return result > 0; // Trả về true nếu cập nhật thành công
+    }
+
+    // Kiểm tra xem tên mèo đã tồn tại trong cơ sở dữ liệu ngoại trừ ID hiện tại
+    private boolean isCatNameExistsExceptId(String name, int id) {
+        Cursor cursor = null;
+        try {
+            cursor = db.query("tb_cat", new String[]{"id"}, "name=? AND id != ?", new String[]{name, String.valueOf(id)}, null, null, null);
+            return cursor.moveToFirst();
+        } finally {
+            if (cursor != null) {
+                cursor.close(); // Đóng cursor
+            }
+        }
+    }
+
+    // Xóa một bản ghi
+    public boolean DeleteRow(CatDTO objCat) {
+        if (objCat == null || objCat.getId() <= 0) {
+            return false; // Nếu không có bản ghi để xóa, trả về false
+        }
+
+        String[] params = {String.valueOf(objCat.getId())};
+        long result = db.delete("tb_cat", "id = ?", params);
+        return result > 0; // Trả về true nếu xóa thành công
+    }
+
+    // Đóng cơ sở dữ liệu khi không còn cần thiết
+    public void close() {
+        if (db != null && db.isOpen()) {
+            db.close();
+        }
     }
 }
